@@ -1,0 +1,129 @@
+<!-- <code>{{ selectedCells | json }}</code> -->
+ {{rowData|json}}
+<div class="table-container" cdkDropListGroup>
+  <!-- <input
+    type="text"
+    [(ngModel)]="filterText"
+    placeholder="🔍"
+    class="filter-input"
+  /> -->
+  <table #excelTable>
+    <thead>
+      <tr>
+        <th class="index-column" (click)="selectAllCells()"></th>
+        <th
+          *ngFor="let col of columnDefs; let colIndex = index"
+          (click)="sortData(col.field)"
+          cdkDrag
+          [cdkDragData]="colIndex"
+          [class.col-selected]="isColSelected(colIndex)"
+          (click)="selectCol(colIndex)"
+          (contextmenu)="showContextMenu($event, col)"
+        >
+          {{ col.headerName }}
+          <!-- <span (click)="openFilter(col.field)" class="filter-icon">🔍</span> -->
+          <!-- <span *ngIf="sortColumn === col.field">
+            {{ sortAsc ? "🔼" : "🔽" }}
+          </span> -->
+        </th>
+      </tr>
+    </thead>
+    <tbody cdkDropList (cdkDropListDropped)="dropRow($event)">
+      <tr
+        *ngFor="let row of filteredData; let rowIndex = index"
+        [class.row-selected]="isRowSelected(rowIndex)"
+        [attr.row-index]="rowIndex"
+      >
+        <td class="index-column" (click)="selectRow(rowIndex)">
+          {{ rowIndex + 1 }}
+        </td>
+        <td
+          *ngFor="let col of columnDefs; let colIndex = index"
+          (click)="selectCell(rowIndex, colIndex)"
+          [ngClass]="getBorderClasses(rowIndex, colIndex)"
+          [attr.row-index]="rowIndex"
+          [attr.col-index]="colIndex"
+          [class.selected]="isCellSelected(rowIndex, colIndex)"
+          [class.edit-mode]="
+            editingCell?.rowIndex === rowIndex &&
+            editingCell?.colIndex === colIndex
+          "
+          (mousedown)="startSelection(rowIndex, colIndex)"
+          (mouseup)="endSelection()"
+          (mouseover)="trackSelection(rowIndex, colIndex)"
+          (dblclick)="enableEdit(rowIndex, colIndex)"
+        >
+          <ng-container
+            *ngIf="
+              editingCell?.rowIndex === rowIndex &&
+                editingCell?.colIndex === colIndex;
+              else viewMode
+            "
+          >
+            <textarea
+              #inputElem
+              [(ngModel)]="editedValue"
+              (keyup.enter)="saveEdit(rowIndex, colIndex)"
+              (keyup.esc)="editingCell = null"
+            ></textarea>
+          </ng-container>
+          <ng-template #viewMode>
+            {{ row[col.field] }}
+          </ng-template>
+        </td>
+      </tr>
+      <tr *ngIf="dragging">
+        <td [attr.colspan]="columnDefs.length + 1" class="placeholder-row"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Filtro Modal -->
+<div *ngIf="filterVisible" class="filter-modal">
+    <div class="filter-modal-content">
+      <div class="filter-header">
+        <input type="text" placeholder="Search" [(ngModel)]="searchText" (input)="filterOptions()" />
+        <select [(ngModel)]="filterType">
+          <option value="contains">Contains</option>
+          <option value="equals">Equals</option>
+        </select>
+      </div>
+      <div class="filter-body">
+        <label>
+          <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll($event)" /> (Select all)
+        </label>
+        <div *ngFor="let option of filteredOptions">
+          <label>
+            <input type="checkbox" [value]="option" [checked]="selectedOptions.includes(option)" (change)="toggleOption(option)" /> {{ option }}
+          </label>
+        </div>
+      </div>
+      <div class="filter-footer">
+        <button (click)="applyFilter()">Ok</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu de Contexto -->
+<div *ngIf="contextMenuVisible" class="context-menu" [ngStyle]="{top: contextMenuPosition.y, left: contextMenuPosition.x}">
+    <ul>
+      <li (click)="cut()">Cut <span class="shortcut">Ctrl + X</span></li>
+      <li (click)="copy()">Copy <span class="shortcut">Ctrl + C</span></li>
+      <li (click)="paste()">Paste <span class="shortcut">Ctrl + V</span></li>
+      <hr />
+      <li (click)="insertColumnBefore()">Insert a new column before</li>
+      <li (click)="insertColumnAfter()">Insert a new column after</li>
+      <li (click)="deleteSelectedColumns()">Delete selected columns</li>
+      <li (click)="renameColumn()">Rename this column</li>
+      <hr />
+      <li (click)="orderAscending()">Order ascending</li>
+      <li (click)="orderDescending()">Order descending</li>
+      <hr />
+      <li (click)="hideColumn()">Hide</li>
+      <li (click)="showColumn()">Show</li>
+      <hr />
+      <li (click)="saveAs()">Save as <span class="shortcut">Ctrl + S</span></li>
+      <li (click)="about()">About</li>
+    </ul>
+  </div>
