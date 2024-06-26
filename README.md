@@ -2,6 +2,9 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.0.5.
 
+![image](https://github.com/juniorpaiva95/ng-excel-grid/assets/17346520/2d631b2b-cb45-4e6a-aea9-5a4536800f4b)
+
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
