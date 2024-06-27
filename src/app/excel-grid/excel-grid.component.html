@@ -1,5 +1,5 @@
 <!-- <code>{{ selectedCells | json }}</code> -->
- {{rowData|json}}
+ <!-- {{rowData|json}} -->
 <div class="table-container" cdkDropListGroup>
   <!-- <input
     type="text"
@@ -38,6 +38,7 @@
           {{ rowIndex + 1 }}
         </td>
         <td
+          #cell
           *ngFor="let col of columnDefs; let colIndex = index"
           (click)="selectCell(rowIndex, colIndex)"
           [ngClass]="getBorderClasses(rowIndex, colIndex)"
@@ -52,6 +53,8 @@
           (mouseup)="endSelection()"
           (mouseover)="trackSelection(rowIndex, colIndex)"
           (dblclick)="enableEdit(rowIndex, colIndex)"
+          appTooltip
+          [attr.data-tooltip]="row[col.field]"
         >
           <ng-container
             *ngIf="

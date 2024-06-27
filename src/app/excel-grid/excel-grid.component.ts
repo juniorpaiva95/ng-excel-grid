@@ -14,10 +14,21 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TooltipDirective } from './tooltip.directive';
 
 interface RowData {
-  chassi: string;
-  renavam: string;
+  garantidores: string;
+  matricula: string;
+  rgi: string;
+  descricao: string;
+  fracao_ideal: string;
+  percent_garantido: string;
+  valor_laudo: string;
+  valor_af: string;
+  zona_imovel: string;
+  georreferenciamento: string;
+  tipo: string;
+  cidade: string;
   [key: string]: string; // Assinatura de índice para permitir indexação por strings
 }
 
@@ -34,48 +45,96 @@ const keyMap: { [key in ArrowKeys]: { rowChange: number; colChange: number } } =
 @Component({
   selector: 'app-excel-grid',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, TooltipDirective],
   templateUrl: './excel-grid.component.html',
   styleUrls: ['./excel-grid.component.scss'],
 })
 export class ExcelGridComponent implements AfterViewInit {
   columnDefs = [
-    { headerName: 'Chassi', field: 'chassi' },
-    { headerName: 'Renavam', field: 'renavam' },
-    { headerName: 'UF', field: 'uf' },
-    { headerName: 'Placa', field: 'placa' },
+    { headerName: 'Garantidores', field: 'garantidores' },
+    { headerName: 'Matrícula', field: 'matricula' },
+    { headerName: 'RGI', field: 'rgi' },
+    { headerName: 'Descrição', field: 'descricao' },
+    { headerName: 'Fração Ideal', field: 'fracao_ideal' },
+    { headerName: '% Garantido', field: 'percent_garantido' },
+    { headerName: 'Valor Mercado (Laudo)', field: 'valor_laudo' },
+    { headerName: 'Valor AF (Contrato)', field: 'valor_af' },
+    { headerName: 'Zona do Imóvel', field: 'zona_imovel' },
+    { headerName: 'Georreferenciamento', field: 'georreferenciamento' },
+    { headerName: 'Tipo', field: 'tipo' },
+    { headerName: 'Cidade', field: 'cidade' },
   ];
 
   rowData: RowData[] = [
     {
-      chassi: '9BD111060T5002156',
-      renavam: '1234567890-1',
-      uf: 'PB',
-      placa: 'OGA-4832',
+      garantidores: 'Teste S/A',
+      matricula: '12312',
+      rgi: '35265',
+      descricao: 'Imóvel na Rua Tal',
+      fracao_ideal: '50%',
+      percent_garantido: '50%',
+      valor_laudo: 'R$ 500.000,00',
+      valor_af: 'R$ 500.000,00',
+      zona_imovel: 'Imóvel Urbano',
+      georreferenciamento: 'Sim',
+      tipo: 'Casa',
+      cidade: 'João Pessoa - PB',
     },
     {
-      chassi: '9BD111060T5002116',
-      renavam: '1234567890-3',
-      uf: 'SP',
-      placa: 'OGA-4832',
+      garantidores: 'Empresa ABC',
+      matricula: '45678',
+      rgi: '98765',
+      descricao: 'Apartamento na Av. Principal',
+      fracao_ideal: '30%',
+      percent_garantido: '70%',
+      valor_laudo: 'R$ 300.000,00',
+      valor_af: 'R$ 280.000,00',
+      zona_imovel: 'Imóvel Urbano',
+      georreferenciamento: 'Sim',
+      tipo: 'Apartamento',
+      cidade: 'Recife - PE',
     },
     {
-      chassi: '9BD111060T5002186',
-      renavam: '1234567890-7',
-      uf: 'MG',
-      placa: 'OGA-4832',
+      garantidores: 'Imobiliária XYZ',
+      matricula: '78901',
+      rgi: '45632',
+      descricao: 'Terreno para construção',
+      fracao_ideal: '70%',
+      percent_garantido: '80%',
+      valor_laudo: 'R$ 700.000,00',
+      valor_af: 'R$ 650.000,00',
+      zona_imovel: 'Terreno Urbano',
+      georreferenciamento: 'Sim',
+      tipo: 'Terreno',
+      cidade: 'São Paulo - SP',
     },
     {
-      chassi: '9BD111060T5002176',
-      renavam: '1234567100-0',
-      uf: 'PE',
-      placa: 'OGA-4832',
+      garantidores: 'Construtora 123',
+      matricula: '54321',
+      rgi: '12345',
+      descricao: 'Casa com piscina',
+      fracao_ideal: '40%',
+      percent_garantido: '60%',
+      valor_laudo: 'R$ 400.000,00',
+      valor_af: 'R$ 380.000,00',
+      zona_imovel: 'Imóvel Urbano',
+      georreferenciamento: 'Sim',
+      tipo: 'Casa',
+      cidade: 'Rio de Janeiro - RJ',
     },
     {
-      chassi: '9BD111060T5002196',
-      renavam: '1234567890-9',
-      uf: 'PI',
-      placa: 'OGA-4832',
+      garantidores: 'Investimentos LTDA',
+      matricula: '24680',
+      rgi: '54321',
+      descricao: 'Sala Comercial no Centro',
+      fracao_ideal: '60%',
+      percent_garantido: '70%',
+      valor_laudo: 'R$ 600.000,00',
+      valor_af: 'R$ 550.000,00',
+      zona_imovel: 'Imóvel Comercial',
+      georreferenciamento: 'Sim',
+      tipo: 'Sala Comercial',
+      cidade: 'Curitiba - PR',
     },
   ];
 
@@ -494,13 +553,41 @@ export class ExcelGridComponent implements AfterViewInit {
       }
     }
   }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent): void {
+    if (event.ctrlKey && event.key === 'c') {
+      this.table.nativeElement.classList.add('copy-mode');
+    }
+  }
+
+  @HostListener('document:keyup', ['$event'])
+  handleKeyUp(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.table.nativeElement.classList.remove('copy-mode');
+    }
+  }
+
   /**
    * Adiciona uma nova linha na grid
    * @memberof ExcelGridComponent
    */
   addRow() {
     console.log('To caindo no add row');
-    const newRow: RowData = { chassi: '', renavam: '', uf: '', placa: '' };
+    const newRow: RowData = {
+      garantidores: '',
+      matricula: '',
+      rgi: '',
+      descricao: '',
+      fracao_ideal: '',
+      percent_garantido: '',
+      valor_laudo: '',
+      valor_af: '',
+      zona_imovel: '',
+      georreferenciamento: '',
+      tipo: '',
+      cidade: '',
+    };
     this.rowData.push(newRow);
     this.filteredData = [...this.rowData];
   }
@@ -658,5 +745,11 @@ export class ExcelGridComponent implements AfterViewInit {
   }
   about(): void {
     /* Implement about logic */
+  }
+
+  // Utilities
+  isTextTruncated(element: HTMLElement): boolean {
+    console.log(element.scrollWidth > element.clientWidth);
+    return element.scrollWidth > element.clientWidth;
   }
 }

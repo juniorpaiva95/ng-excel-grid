@@ -11,11 +11,11 @@ $table-bg-placeholder: blue;
 $table-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
 .table-container {
-  overflow-x: hidden;
+  width: 100%;
+  overflow-x: auto;
+  max-width: 1200px; /* Limite a largura máxima para 1200px */
   box-shadow: $table-shadow;
-  margin-top: 10px;
-  width: fit-content;
-  max-height: 255px;
+  max-height: 500px;
 
   &.grabbing {
     cursor: grabbing;
@@ -26,8 +26,14 @@ $table-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 
+@media (max-width: 1200px) {
+  .table-container {
+    overflow-x: auto; /* Habilitar scroll horizontal */
+  }
+}
+
 table {
-  width: auto;
+  width: 100%;
   border-collapse: collapse;
   margin: 0;
   border-spacing: 0;
@@ -36,15 +42,26 @@ table {
     height: 24px;
     box-sizing: border-box;
   }
-  th,
+  th {
+    text-align: center;
+  }
   td {
     text-align: left;
+  }
+  th,
+  td {
     position: relative;
     user-select: none;
     border: $table-border-width $table-border-style $table-border-color;
-    max-width: 300px; /* Limita a largura máxima do input */
-    word-wrap: break-word; /* Quebra o texto quando necessário */
-    white-space: normal; /* Permite que o texto faça quebra de linha */
+    max-width: 300px; /* Limite a largura máxima */
+  word-wrap: break-word; /* Permitir quebra de linha */
+  // white-space: normal; /* Permitir quebra de linha */
+  white-space: nowrap;
+  overflow: hidden; /* Ocultar texto excedente */
+  text-overflow: ellipsis; /* Adicionar os 3 pontinhos */
+  position: relative; /* Necessário para o tooltip */
+
+  
     vertical-align: top; /* Garante que o conteúdo fique alinhado ao topo */
     height: 24px;
     box-sizing: border-box;
@@ -87,6 +104,10 @@ table {
 
       bottom: -4px;
       right: -4px;
+    }
+
+    &.index-column {
+      cursor: pointer;
     }
   }
 
@@ -233,4 +254,50 @@ cdk-drag-placeholder {
 .shortcut {
   color: #888;
   margin-left: 10px;
+}
+
+
+@keyframes linearGradientMove {
+  100% {
+    background-position: 4px 0, -4px 100%, 0 -4px, 100% 4px;
+  }
+}
+
+table.copy-mode th.border-left, table.copy-mode td.border-left {
+  animation: linearGradientMove 0.3s infinite linear;
+  border-left-style: dashed;
+}
+
+table.copy-mode th.border-right, table.copy-mode td.border-right {
+  animation: linearGradientMove 0.3s infinite linear;
+  border-right-style: dashed;
+}
+table.copy-mode th.border-top, table.copy-mode td.border-top {
+  animation: linearGradientMove 0.3s infinite linear;
+  border-top-style: dashed;
+}
+table.copy-mode th.border-bottom, table.copy-mode td.border-bottom {
+  animation: linearGradientMove 0.3s infinite linear;
+  border-bottom-style: dashed;
+}
+
+// Tooltip
+/* Estilos para o tooltip */
+// table th:hover, table td:hover {
+//   overflow: visible;
+// }
+
+table th:hover::after, table td:hover::after {
+  content: attr(data-tooltip); /* Mostrar o conteúdo completo */
+  position: absolute;
+  left: 0;
+  top: 100%;
+  white-space: normal;
+  background: #333;
+  color: #fff;
+  padding: 5px;
+  border-radius: 3px;
+  z-index: 1;
+  min-width: 100%;
+  max-width: 300px; /* Mesma largura máxima que as células */
 }
