@@ -11,7 +11,9 @@ import {
   Component,
   ElementRef,
   HostListener,
+  QueryList,
   ViewChild,
+  ViewChildren,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TooltipDirective } from './tooltip.directive';
@@ -163,10 +165,14 @@ export class ExcelGridComponent implements AfterViewInit {
   // Context Menu
   contextMenuVisible = false;
   contextMenuPosition = { x: '0px', y: '0px' };
+  contextRowMenuPosition = { x: '0px', y: '0px' };
+  rowContextMenuVisible = false;
 
   @ViewChild('excelTable') table!: ElementRef;
 
   @ViewChild('inputElem') inputElem!: ElementRef;
+
+  @ViewChildren('cell') cells!: QueryList<ElementRef>;
 
   ngAfterViewChecked() {
     if (this.inputElem && this.editingCell) {
@@ -352,6 +358,20 @@ export class ExcelGridComponent implements AfterViewInit {
         });
       }
     });
+
+    this.scrollIntoView(rowIndex, colIndex);
+  }
+
+  scrollIntoView(rowIndex: number, colIndex: number) {
+    const cellIndex = rowIndex * this.columnDefs.length + colIndex;
+    const cell = this.cells.toArray()[cellIndex];
+    if (cell) {
+      cell.nativeElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+    }
   }
 
   isRowSelected(rowIndex: number): boolean {
@@ -510,16 +530,32 @@ export class ExcelGridComponent implements AfterViewInit {
         this.rowData.length - 1,
         !(rowIndex < this.rowData.length - 1)
       );
-      if (!(rowIndex < this.rowData.length - 1)) {
+      if (!(rowIndex < this.rowData.length - 1) && !this.editingCell) {
         this.addRow();
       }
       this.selectCell(rowIndex + 1, colIndex);
     }
   }
 
-  @HostListener('document:keydown', ['$event'])
+  @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (this.selectedCells.length > 0 && !this.editingCell) {
+    console.log('HandleKeyboardEvent ->');
+    const keyMap: {
+      [key in ArrowKeys]: { rowChange: number; colChange: number };
+    } = {
+      ArrowDown: { rowChange: 1, colChange: 0 },
+      ArrowUp: { rowChange: -1, colChange: 0 },
+      ArrowRight: { rowChange: 0, colChange: 1 },
+      ArrowLeft: { rowChange: 0, colChange: -1 },
+    };
+
+    if (
+      this.selectedCells.length > 0 &&
+      !this.editingCell &&
+      event.key in keyMap
+    ) {
+      event.preventDefault(); // Evita a ação padrão das teclas de seta
+
       const lastSelectedCell =
         this.selectedCells[this.selectedCells.length - 1];
       const { rowIndex, colIndex } = lastSelectedCell;
@@ -533,23 +569,12 @@ export class ExcelGridComponent implements AfterViewInit {
         );
       };
 
-      const keyMap = {
-        ArrowDown: { rowChange: 1, colChange: 0 },
-        ArrowUp: { rowChange: -1, colChange: 0 },
-        ArrowRight: { rowChange: 0, colChange: 1 },
-        ArrowLeft: { rowChange: 0, colChange: -1 },
-      };
+      const { rowChange, colChange } = keyMap[event.key as ArrowKeys];
+      const newRow = rowIndex + rowChange;
+      const newCol = colIndex + colChange;
 
-      const key = event.key as keyof typeof keyMap;
-
-      if (keyMap[key]) {
-        const { rowChange, colChange } = keyMap[key];
-        const newRow = rowIndex + rowChange;
-        const newCol = colIndex + colChange;
-
-        if (isValidCell(newRow, newCol)) {
-          this.selectCell(newRow, newCol);
-        }
+      if (isValidCell(newRow, newCol)) {
+        this.selectCell(newRow, newCol);
       }
     }
   }
@@ -691,12 +716,6 @@ export class ExcelGridComponent implements AfterViewInit {
   }
 
   // Context Menu
-
-  @HostListener('document:click')
-  hideContextMenu(): void {
-    this.contextMenuVisible = false;
-  }
-
   showContextMenu(event: MouseEvent, column: any): void {
     event.preventDefault();
     this.contextMenuPosition = {
@@ -704,6 +723,7 @@ export class ExcelGridComponent implements AfterViewInit {
       y: `${event.clientY}px`,
     };
     this.contextMenuVisible = true;
+    this.rowContextMenuVisible = false;
   }
 
   // Add methods for context menu actions
@@ -716,35 +736,106 @@ export class ExcelGridComponent implements AfterViewInit {
   paste(): void {
     /* Implement paste logic */
   }
-  insertColumnBefore(): void {
-    /* Implement insert column before logic */
-  }
-  insertColumnAfter(): void {
-    /* Implement insert column after logic */
-  }
-  deleteSelectedColumns(): void {
-    /* Implement delete selected columns logic */
-  }
-  renameColumn(): void {
-    /* Implement rename column logic */
-  }
   orderAscending(): void {
     /* Implement order ascending logic */
   }
   orderDescending(): void {
     /* Implement order descending logic */
   }
-  hideColumn(): void {
-    /* Implement hide column logic */
-  }
-  showColumn(): void {
-    /* Implement show column logic */
-  }
   saveAs(): void {
     /* Implement save as logic */
   }
   about(): void {
     /* Implement about logic */
+  }
+
+  // Ações para menu das linhas
+
+  showRowContextMenu(event: MouseEvent, rowIndex: number): void {
+    event.preventDefault();
+    this.contextRowMenuPosition = {
+      x: `${event.clientX}px`,
+      y: `${event.clientY}px`,
+    };
+    this.rowContextMenuVisible = true;
+    this.contextMenuVisible = false;
+    this.selectedRowIndex = rowIndex;
+  }
+
+  @HostListener('document:click')
+  hideContextMenu(): void {
+    this.rowContextMenuVisible = false;
+    this.contextMenuVisible = false;
+  }
+
+  // Métodos para as ações do menu de contexto
+  insertRowAbove(): void {
+    if (this.selectedRowIndex !== null) {
+      this.rowData.splice(this.selectedRowIndex, 0, this.createEmptyRow());
+      this.filteredData = [...this.rowData];
+      this.rowContextMenuVisible = false;
+    }
+  }
+
+  insertRowBelow(): void {
+    if (this.selectedRowIndex !== null) {
+      this.rowData.splice(this.selectedRowIndex + 1, 0, this.createEmptyRow());
+      this.filteredData = [...this.rowData];
+      this.rowContextMenuVisible = false;
+    }
+  }
+
+  removeRow(): void {
+    if (this.selectedRowIndex !== null) {
+      this.rowData.splice(this.selectedRowIndex, 1);
+      this.filteredData = [...this.rowData];
+      this.rowContextMenuVisible = false;
+    }
+  }
+
+  removeColumns(): void {
+    // Implementar a lógica para remover colunas
+  }
+
+  undo(): void {
+    // Implementar a lógica para desfazer a última ação
+  }
+
+  redo(): void {
+    // Implementar a lógica para refazer a última ação desfeita
+  }
+
+  setReadOnly(): void {
+    // Implementar a lógica para definir a célula como somente leitura
+  }
+
+  setAlignment(): void {
+    // Implementar a lógica para definir o alinhamento da célula
+  }
+
+  copyRow(): void {
+    // Implementar a lógica para copiar a célula
+  }
+
+  cutRow(): void {
+    // Implementar a lógica para cortar a célula
+  }
+
+  createEmptyRow(): RowData {
+    return {
+      garantidores: '',
+      matricula: '',
+      rgi: '',
+      descricao: '',
+      fracao_ideal: '',
+      percent_garantido: '',
+      valor_laudo: '',
+      valor_af: '',
+      zona_imovel: '',
+      georreferenciamento: '',
+      tipo: '',
+      cidade: '',
+    };
   }
 
   // Utilities

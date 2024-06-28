@@ -31,22 +31,22 @@ export class TooltipDirective implements AfterViewInit, OnChanges {
     const element = this.el.nativeElement;
     setTimeout(() => {
       const textContent = element.textContent.trim();
-      console.log(
-        'Element:',
-        element,
-        'ScrollWidth:',
-        element.scrollWidth,
-        'ClientWidth:',
-        element.clientWidth,
-        'Text:',
-        textContent
-      );
+      //   console.log(
+      //     'Element:',
+      //     element,
+      //     'ScrollWidth:',
+      //     element.scrollWidth,
+      //     'ClientWidth:',
+      //     element.clientWidth,
+      //     'Text:',
+      //     textContent
+      //   );
       if (element.scrollWidth > element.clientWidth) {
         this.renderer.setAttribute(element, 'data-tooltip', textContent);
-        console.log('Tooltip added:', textContent);
+        // console.log('Tooltip added:', textContent);
       } else {
         this.renderer.removeAttribute(element, 'data-tooltip');
-        console.log('Tooltip removed');
+        // console.log('Tooltip removed');
       }
     }, 0);
   }

@@ -21,7 +21,7 @@
           (contextmenu)="showContextMenu($event, col)"
         >
           {{ col.headerName }}
-          <!-- <span (click)="openFilter(col.field)" class="filter-icon">🔍</span> -->
+          <span (click)="openFilter(col.field)" class="filter-icon">🔍</span>
           <!-- <span *ngIf="sortColumn === col.field">
             {{ sortAsc ? "🔼" : "🔽" }}
           </span> -->
@@ -31,6 +31,7 @@
     <tbody cdkDropList (cdkDropListDropped)="dropRow($event)">
       <tr
         *ngFor="let row of filteredData; let rowIndex = index"
+        (contextmenu)="showRowContextMenu($event, rowIndex)"
         [class.row-selected]="isRowSelected(rowIndex)"
         [attr.row-index]="rowIndex"
       >
@@ -108,25 +109,33 @@
     </div>
   </div>
 
-  <!-- Menu de Contexto -->
+  <!-- Menu de Contexto Colunas -->
 <div *ngIf="contextMenuVisible" class="context-menu" [ngStyle]="{top: contextMenuPosition.y, left: contextMenuPosition.x}">
     <ul>
-      <li (click)="cut()">Cut <span class="shortcut">Ctrl + X</span></li>
-      <li (click)="copy()">Copy <span class="shortcut">Ctrl + C</span></li>
-      <li (click)="paste()">Paste <span class="shortcut">Ctrl + V</span></li>
+      <li (click)="cut()">Recortar <span class="shortcut">Ctrl + X</span></li>
+      <li (click)="copy()">Copiar <span class="shortcut">Ctrl + C</span></li>
+      <li (click)="paste()">Colar <span class="shortcut">Ctrl + V</span></li>
       <hr />
-      <li (click)="insertColumnBefore()">Insert a new column before</li>
-      <li (click)="insertColumnAfter()">Insert a new column after</li>
-      <li (click)="deleteSelectedColumns()">Delete selected columns</li>
-      <li (click)="renameColumn()">Rename this column</li>
+      <li (click)="orderAscending()">Classificar de A a Z</li>
+      <li (click)="orderDescending()">Classificar de Z a A</li>
       <hr />
-      <li (click)="orderAscending()">Order ascending</li>
-      <li (click)="orderDescending()">Order descending</li>
-      <hr />
-      <li (click)="hideColumn()">Hide</li>
-      <li (click)="showColumn()">Show</li>
-      <hr />
-      <li (click)="saveAs()">Save as <span class="shortcut">Ctrl + S</span></li>
-      <li (click)="about()">About</li>
     </ul>
   </div>
+
+  <!-- Menu de contexto para as linhas -->
+<div class="context-menu" [ngStyle]="{'top.px': contextRowMenuPosition.y, 'left.px': contextRowMenuPosition.x}" *ngIf="rowContextMenuVisible">
+  <ul>
+    <li (click)="cutRow()">Recortar</li>
+    <li (click)="copyRow()">Copiar</li>
+    <hr />
+    <li (click)="insertRowAbove()">Inserir uma linha acima</li>
+    <li (click)="insertRowBelow()">Inserir uma linha abaixo</li>
+
+    <li (click)="removeRow()">Excluir linha</li>
+    <li (click)="removeColumns()">Remover colunas</li>
+    <li (click)="undo()">Desfazer</li>
+    <li (click)="redo()">Refazer</li>
+    <li (click)="setReadOnly()">Read only</li>
+    <li (click)="setAlignment()">Alinhamento</li>
+  </ul>
+</div>
