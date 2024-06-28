@@ -18,7 +18,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { TooltipDirective } from './tooltip.directive';
 
-interface RowData {
+export interface RowData {
   garantidores: string;
   matricula: string;
   rgi: string;
@@ -753,6 +753,7 @@ export class ExcelGridComponent implements AfterViewInit {
 
   showRowContextMenu(event: MouseEvent, rowIndex: number): void {
     event.preventDefault();
+    this.selectRow(rowIndex);
     this.contextRowMenuPosition = {
       x: `${event.clientX}px`,
       y: `${event.clientY}px`,
