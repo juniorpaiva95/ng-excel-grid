@@ -11,38 +11,19 @@ import {
   Component,
   ElementRef,
   HostListener,
+  Input,
+  OnInit,
   QueryList,
   ViewChild,
   ViewChildren,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TooltipDirective } from './tooltip.directive';
-
-export interface RowData {
-  garantidores: string;
-  matricula: string;
-  rgi: string;
-  descricao: string;
-  fracao_ideal: string;
-  percent_garantido: string;
-  valor_laudo: string;
-  valor_af: string;
-  zona_imovel: string;
-  georreferenciamento: string;
-  tipo: string;
-  cidade: string;
-  [key: string]: string; // Assinatura de índice para permitir indexação por strings
-}
-
-type ArrowKeys = 'ArrowDown' | 'ArrowUp' | 'ArrowRight' | 'ArrowLeft';
-
-const keyMap: { [key in ArrowKeys]: { rowChange: number; colChange: number } } =
-  {
-    ArrowDown: { rowChange: 1, colChange: 0 },
-    ArrowUp: { rowChange: -1, colChange: 0 },
-    ArrowRight: { rowChange: 0, colChange: 1 },
-    ArrowLeft: { rowChange: 0, colChange: -1 },
-  };
+import { IColumnDef, IRowData } from './interfaces';
+import { ArrowKeys } from './types/arrow-keys.type';
+import { Observable } from 'rxjs';
+import { GridService } from './services/grid.service';
+import { HistoryService } from './services/history.service';
 
 @Component({
   selector: 'app-excel-grid',
@@ -51,94 +32,10 @@ const keyMap: { [key in ArrowKeys]: { rowChange: number; colChange: number } } =
   templateUrl: './excel-grid.component.html',
   styleUrls: ['./excel-grid.component.scss'],
 })
-export class ExcelGridComponent implements AfterViewInit {
-  columnDefs = [
-    { headerName: 'Garantidores', field: 'garantidores' },
-    { headerName: 'Matrícula', field: 'matricula' },
-    { headerName: 'RGI', field: 'rgi' },
-    { headerName: 'Descrição', field: 'descricao' },
-    { headerName: 'Fração Ideal', field: 'fracao_ideal' },
-    { headerName: '% Garantido', field: 'percent_garantido' },
-    { headerName: 'Valor Mercado (Laudo)', field: 'valor_laudo' },
-    { headerName: 'Valor AF (Contrato)', field: 'valor_af' },
-    { headerName: 'Zona do Imóvel', field: 'zona_imovel' },
-    { headerName: 'Georreferenciamento', field: 'georreferenciamento' },
-    { headerName: 'Tipo', field: 'tipo' },
-    { headerName: 'Cidade', field: 'cidade' },
-  ];
+export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
 
-  rowData: RowData[] = [
-    {
-      garantidores: 'Teste S/A',
-      matricula: '12312',
-      rgi: '35265',
-      descricao: 'Imóvel na Rua Tal',
-      fracao_ideal: '50%',
-      percent_garantido: '50%',
-      valor_laudo: 'R$ 500.000,00',
-      valor_af: 'R$ 500.000,00',
-      zona_imovel: 'Imóvel Urbano',
-      georreferenciamento: 'Sim',
-      tipo: 'Casa',
-      cidade: 'João Pessoa - PB',
-    },
-    {
-      garantidores: 'Empresa ABC',
-      matricula: '45678',
-      rgi: '98765',
-      descricao: 'Apartamento na Av. Principal',
-      fracao_ideal: '30%',
-      percent_garantido: '70%',
-      valor_laudo: 'R$ 300.000,00',
-      valor_af: 'R$ 280.000,00',
-      zona_imovel: 'Imóvel Urbano',
-      georreferenciamento: 'Sim',
-      tipo: 'Apartamento',
-      cidade: 'Recife - PE',
-    },
-    {
-      garantidores: 'Imobiliária XYZ',
-      matricula: '78901',
-      rgi: '45632',
-      descricao: 'Terreno para construção',
-      fracao_ideal: '70%',
-      percent_garantido: '80%',
-      valor_laudo: 'R$ 700.000,00',
-      valor_af: 'R$ 650.000,00',
-      zona_imovel: 'Terreno Urbano',
-      georreferenciamento: 'Sim',
-      tipo: 'Terreno',
-      cidade: 'São Paulo - SP',
-    },
-    {
-      garantidores: 'Construtora 123',
-      matricula: '54321',
-      rgi: '12345',
-      descricao: 'Casa com piscina',
-      fracao_ideal: '40%',
-      percent_garantido: '60%',
-      valor_laudo: 'R$ 400.000,00',
-      valor_af: 'R$ 380.000,00',
-      zona_imovel: 'Imóvel Urbano',
-      georreferenciamento: 'Sim',
-      tipo: 'Casa',
-      cidade: 'Rio de Janeiro - RJ',
-    },
-    {
-      garantidores: 'Investimentos LTDA',
-      matricula: '24680',
-      rgi: '54321',
-      descricao: 'Sala Comercial no Centro',
-      fracao_ideal: '60%',
-      percent_garantido: '70%',
-      valor_laudo: 'R$ 600.000,00',
-      valor_af: 'R$ 550.000,00',
-      zona_imovel: 'Imóvel Comercial',
-      georreferenciamento: 'Sim',
-      tipo: 'Sala Comercial',
-      cidade: 'Curitiba - PR',
-    },
-  ];
+  @Input() columnDefs: IColumnDef[] = [];
+  @Input() rowData: IRowData<T>[] = [];
 
   sortColumn: string = '';
   sortAsc: boolean = true;
@@ -149,18 +46,19 @@ export class ExcelGridComponent implements AfterViewInit {
   selectedColIndex: number | null = null;
   dragging: boolean = false;
   editingCell: { rowIndex: number; colIndex: number } | null = null;
-  editedValue: string = '';
+  editedValue: T = null!;
 
   // Filter states
+  rowData$: Observable<IRowData<T>[]>;
   filteredData = [...this.rowData];
   filterVisible = false;
   filterField = '';
   filterType = 'contains';
   searchText = '';
   allSelected = true;
-  options: string[] = [];
-  filteredOptions: string[] = [];
-  selectedOptions: string[] = [];
+  options: T[] = [];
+  filteredOptions: T[] = [];
+  selectedOptions: T[] = [];
 
   // Context Menu
   contextMenuVisible = false;
@@ -174,11 +72,26 @@ export class ExcelGridComponent implements AfterViewInit {
 
   @ViewChildren('cell') cells!: QueryList<ElementRef>;
 
+  constructor(
+    private gridService: GridService<T>,
+    private historyService: HistoryService
+  ) {
+    this.rowData$ = this.gridService.rowData$;
+    this.rowData$.subscribe(data => {
+      this.filteredData = data;
+    });
+  }
+
   ngAfterViewChecked() {
     if (this.inputElem && this.editingCell) {
       this.inputElem.nativeElement.focus();
       // this.setInputHeight();
     }
+  }
+
+  ngOnInit(): void {
+    this.filteredData = [...this.rowData];
+    this.gridService.initializeData(this.rowData);
   }
 
   ngAfterViewInit() {
@@ -424,15 +337,15 @@ export class ExcelGridComponent implements AfterViewInit {
     this.adjustColumnWidths();
   }
 
-  dropRow(event: CdkDragDrop<RowData[]>): void {
+  dropRow(event: CdkDragDrop<IRowData[]>): void {
     if (event.previousIndex !== event.currentIndex) {
       moveItemInArray(this.rowData, event.previousIndex, event.currentIndex);
     }
     this.dragging = false;
   }
 
-  reorderObjectKeys(obj: RowData, newKeys: string[]): void {
-    const newObj: RowData = {} as RowData;
+  reorderObjectKeys(obj: IRowData, newKeys: string[]): void {
+    const newObj: IRowData = {} as IRowData;
     newKeys.forEach((key) => {
       newObj[key] = obj[key];
     });
@@ -584,6 +497,15 @@ export class ExcelGridComponent implements AfterViewInit {
     if (event.ctrlKey && event.key === 'c') {
       this.table.nativeElement.classList.add('copy-mode');
     }
+
+    else if (event.ctrlKey && event.key === 'z') {
+      event.preventDefault();
+      console.log('Ctrl + z ->', this.historyService)
+      this.historyService.undo();
+    } else if (event.ctrlKey && event.key === 'y') {
+      event.preventDefault();
+      this.historyService.redo();
+    }
   }
 
   @HostListener('document:keyup', ['$event'])
@@ -599,7 +521,7 @@ export class ExcelGridComponent implements AfterViewInit {
    */
   addRow() {
     console.log('To caindo no add row');
-    const newRow: RowData = {
+    const newRow: IRowData = {
       garantidores: '',
       matricula: '',
       rgi: '',
@@ -681,10 +603,12 @@ export class ExcelGridComponent implements AfterViewInit {
 
   filterOptions(): void {
     const lowerSearchText = this.searchText.toLowerCase();
-    this.filteredOptions = this.options.filter((option) =>
+    this.filteredOptions = this.options.filter((option) => {
+      const optionText = String(option).toLowerCase();
       this.filterType === 'contains'
-        ? option.toLowerCase().includes(lowerSearchText)
-        : option.toLowerCase() === lowerSearchText
+        ? optionText.includes(lowerSearchText)
+        : optionText === lowerSearchText
+    }
     );
   }
 
@@ -694,7 +618,7 @@ export class ExcelGridComponent implements AfterViewInit {
     this.selectedOptions = checked ? [...this.options] : [];
   }
 
-  toggleOption(option: string): void {
+  toggleOption(option: T): void {
     const index = this.selectedOptions.indexOf(option);
     if (index > -1) {
       this.selectedOptions.splice(index, 1);
@@ -788,9 +712,9 @@ export class ExcelGridComponent implements AfterViewInit {
 
   removeRow(): void {
     if (this.selectedRowIndex !== null) {
-      this.rowData.splice(this.selectedRowIndex, 1);
-      this.filteredData = [...this.rowData];
+      this.gridService.removeRow(this.selectedRowIndex);
       this.rowContextMenuVisible = false;
+      this.selectedRowIndex = null; // Limpar a seleção após a remoção
     }
   }
 
@@ -822,7 +746,7 @@ export class ExcelGridComponent implements AfterViewInit {
     // Implementar a lógica para cortar a célula
   }
 
-  createEmptyRow(): RowData {
+  createEmptyRow(): IRowData {
     return {
       garantidores: '',
       matricula: '',
