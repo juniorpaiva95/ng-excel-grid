@@ -13,6 +13,6 @@ export class RemoveRowAction<T> implements Action {
   }
 
   redo() {
-    this.gridService.removeRow(this.rowIndex);
+    this.gridService.removeRow(this.rowIndex, true);
   }
 }

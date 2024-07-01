@@ -24,7 +24,7 @@ export class GridService<T = any> {
     const newRow = this.createEmptyRow();
     currentData.splice(rowIndex, 0, newRow);
     this.rowDataSubject.next([...currentData]);
-    this.historyService.execute(new AddRowAction(this, rowIndex));
+    this.historyService.addAction(new AddRowAction(this, rowIndex));
   }
 
   insertRow(rowIndex: number, rowData: IRowData<T>) {
@@ -33,29 +33,32 @@ export class GridService<T = any> {
     this.rowDataSubject.next([...currentData]);
   }
 
-  removeRow(rowIndex: number) {
-    console.log("RemoveRow -> ", rowIndex);
+  removeRow(rowIndex: number, skipStory: boolean = false) {
     const currentData = this.rowDataSubject.getValue();
     const removedRow = currentData.splice(rowIndex, 1)[0];
-    console.log(currentData, removedRow);
     this.rowDataSubject.next([...currentData]);
-    this.historyService.execute(new RemoveRowAction(this, rowIndex, removedRow));
+    if (!skipStory) {
+      this.historyService.addAction(
+        new RemoveRowAction(this, rowIndex, removedRow)
+      );
+    }
   }
 
-  directRemoveRow(rowIndex: number) {
-    console.log("DirectRemove Row -> ", rowIndex);
+  setCellValue(
+    rowIndex: number,
+    colIndex: keyof IRowData<T>,
+    value: T,
+    skipHistory: boolean = false
+  ) {
     const currentData = this.rowDataSubject.getValue();
-    currentData.splice(rowIndex, 1);
+    const oldValue = currentData[rowIndex][colIndex];
+    currentData[rowIndex][colIndex] = value;
     this.rowDataSubject.next([...currentData]);
-  }
-
-  setCellValue(rowIndex: number, colIndex: keyof IRowData<T>, value: T) {
-    const currentData = this.rowDataSubject.getValue();
-    const oldValue = currentData[rowIndex][colIndex] = value;
-    this.rowDataSubject.next([...currentData]);
-    this.historyService.execute(
+    if (!skipHistory) {
+      this.historyService.addAction(
         new EditCellAction(this, rowIndex, colIndex, oldValue, value)
       );
+    }
   }
 
   createEmptyRow(): IRowData<T> {

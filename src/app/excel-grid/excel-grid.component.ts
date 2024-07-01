@@ -33,7 +33,6 @@ import { HistoryService } from './services/history.service';
   styleUrls: ['./excel-grid.component.scss'],
 })
 export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
-
   @Input() columnDefs: IColumnDef[] = [];
   @Input() rowData: IRowData<T>[] = [];
 
@@ -77,9 +76,6 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
     private historyService: HistoryService
   ) {
     this.rowData$ = this.gridService.rowData$;
-    this.rowData$.subscribe(data => {
-      this.filteredData = data;
-    });
   }
 
   ngAfterViewChecked() {
@@ -90,8 +86,11 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
   }
 
   ngOnInit(): void {
-    this.filteredData = [...this.rowData];
     this.gridService.initializeData(this.rowData);
+    this.rowData$.subscribe((data) => {
+      this.filteredData = data;
+    });
+    this.filteredData = [...this.rowData];
   }
 
   ngAfterViewInit() {
@@ -438,11 +437,6 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
       const lastSelectedCell =
         this.selectedCells[this.selectedCells.length - 1];
       const { rowIndex, colIndex } = lastSelectedCell;
-      console.log(
-        rowIndex,
-        this.rowData.length - 1,
-        !(rowIndex < this.rowData.length - 1)
-      );
       if (!(rowIndex < this.rowData.length - 1) && !this.editingCell) {
         this.addRow();
       }
@@ -452,7 +446,7 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    console.log('HandleKeyboardEvent ->');
+    // console.log('HandleKeyboardEvent ->');
     const keyMap: {
       [key in ArrowKeys]: { rowChange: number; colChange: number };
     } = {
@@ -494,15 +488,13 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
 
   @HostListener('document:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent): void {
+    // console.log('Ctrl + z ->', this.historyService)
     if (event.ctrlKey && event.key === 'c') {
       this.table.nativeElement.classList.add('copy-mode');
-    }
-
-    else if (event.ctrlKey && event.key === 'z') {
+    } else if (event.ctrlKey && event.key.toLowerCase() === 'z') {
       event.preventDefault();
-      console.log('Ctrl + z ->', this.historyService)
       this.historyService.undo();
-    } else if (event.ctrlKey && event.key === 'y') {
+    } else if (event.ctrlKey && event.key.toLowerCase() === 'y') {
       event.preventDefault();
       this.historyService.redo();
     }
@@ -580,7 +572,14 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
   }
 
   saveEdit(rowIndex: number, colIndex: number): void {
-    this.rowData[rowIndex][this.columnDefs[colIndex].field] = this.editedValue;
+    const oldValue = this.rowData[rowIndex][this.columnDefs[colIndex].field];
+    if (oldValue !== this.editedValue) {
+      this.gridService.setCellValue(
+        rowIndex,
+        this.columnDefs[colIndex].field,
+        this.editedValue
+      );
+    }
     this.editingCell = null;
     this.resetRowHeight(rowIndex);
   }
@@ -607,9 +606,8 @@ export class ExcelGridComponent<T = any> implements AfterViewInit, OnInit {
       const optionText = String(option).toLowerCase();
       this.filterType === 'contains'
         ? optionText.includes(lowerSearchText)
-        : optionText === lowerSearchText
-    }
-    );
+        : optionText === lowerSearchText;
+    });
   }
 
   toggleSelectAll(event: Event): void {

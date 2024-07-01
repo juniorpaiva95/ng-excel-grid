@@ -11,10 +11,10 @@ export class EditCellAction<T> implements Action {
   ) {}
 
   undo() {
-    this.gridService.setCellValue(this.rowIndex, this.colIndex, this.oldValue);
+    this.gridService.setCellValue(this.rowIndex, this.colIndex, this.oldValue, true);
   }
 
   redo() {
-    this.gridService.setCellValue(this.rowIndex, this.colIndex, this.newValue);
+    this.gridService.setCellValue(this.rowIndex, this.colIndex, this.newValue, true);
   }
 }

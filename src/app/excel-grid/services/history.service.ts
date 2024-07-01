@@ -8,12 +8,15 @@ export class HistoryService {
   private undoStack: Action[] = [];
   private redoStack: Action[] = [];
 
-  execute(action: Action) {
-    // action.redo();
+  addAction(action: Action) {
     this.undoStack.push(action);
-    // this.redoStack = []; // Limpa a pilha de refazer quando uma nova ação é executada
+    this.redoStack = [];
   }
 
+  /**
+   * @description Desfazer (Ctrl + Z)
+   * @memberof HistoryService
+   */
   undo() {
     const action = this.undoStack.pop();
     if (action) {
@@ -22,6 +25,10 @@ export class HistoryService {
     }
   }
 
+  /**
+   * @description Refazer (Ctrl + Y)
+   * @memberof HistoryService
+   */
   redo() {
     const action = this.redoStack.pop();
     if (action) {
